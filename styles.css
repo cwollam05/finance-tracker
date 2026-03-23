@@ -474,15 +474,47 @@ body {
 
 /* ── RESPONSIVE ────────────────────────────────────────────────── */
 @media (max-width: 600px) {
-  .summary-cards { grid-template-columns: 1fr; }
 
-  .form-grid { grid-template-columns: 1fr; }
+  /* Navbar — hide username, keep brand + logout tight */
+  .navbar        { padding: .6rem 1rem; }
+  .nav-brand     { font-size: .9rem; }
+  .nav-brand .logo-icon { font-size: 1.1rem; }
+  .nav-user      { display: none; }
+  .btn-ghost     { padding: .35rem .75rem; font-size: .78rem; }
 
-  .list-header { flex-direction: column; align-items: flex-start; }
+  /* App layout — tighter gaps and padding */
+  .app-layout    { padding: 1rem .75rem 2rem; gap: 1rem; }
 
-  .card-amount { font-size: 1.3rem; }
+  /* Section titles */
+  .section-title { font-size: 1rem; margin-bottom: .6rem; }
 
-  .auth-card { padding: 1.75rem 1.25rem; }
+  /* Summary cards — stay 3 columns but compact */
+  .summary-cards {
+    grid-template-columns: repeat(3, 1fr);
+    gap: .5rem;
+  }
+  .card          { padding: .75rem .6rem; gap: .2rem; }
+  .card-label    { font-size: .68rem; }
+  .card-amount   { font-size: 1.1rem; }
 
-  .navbar { padding: .75rem 1rem; }
+  /* Budget card */
+  .budget-card   { padding: .75rem .75rem; margin-top: .5rem; }
+
+  /* Form section */
+  .form-section  { padding: 1rem .75rem; }
+  .form-grid     { grid-template-columns: 1fr; gap: .65rem; }
+
+  /* List section */
+  .list-section  { padding: 1rem .75rem; }
+  .list-header   { flex-direction: column; align-items: flex-start; }
+  .list-filters  { width: 100%; }
+  .list-filters select { flex: 1; }
+
+  /* Transaction items */
+  .tx-item       { padding: .65rem .75rem; }
+  .tx-desc       { font-size: .85rem; }
+  .tx-amount     { font-size: .9rem; }
+
+  /* Auth card */
+  .auth-card     { padding: 1.5rem 1rem; }
 }
