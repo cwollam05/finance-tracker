@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Finance Tracker</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+
+  <!-- ── AUTH SCREEN ─────────────────────────────────────────── -->
+  <div id="auth-screen" class="screen">
+    <div class="auth-card">
+      <div class="auth-logo">
+        <span class="logo-icon">💰</span>
+        <h1>FinanceTracker</h1>
+      </div>
+
+      <!-- Tab toggle -->
+      <div class="auth-tabs">
+        <button class="tab-btn active" data-tab="login">Log In</button>
+        <button class="tab-btn" data-tab="signup">Sign Up</button>
+      </div>
+
+      <!-- Login Form -->
+      <form id="login-form" class="auth-form">
+        <div class="field-group">
+          <label for="login-email">Email</label>
+          <input type="email" id="login-email" placeholder="you@example.com" required />
+        </div>
+        <div class="field-group">
+          <label for="login-password">Password</label>
+          <input type="password" id="login-password" placeholder="••••••••" required />
+        </div>
+        <p id="login-error" class="form-error hidden"></p>
+        <button type="submit" class="btn btn-primary btn-full">Log In</button>
+      </form>
+
+      <!-- Signup Form -->
+      <form id="signup-form" class="auth-form hidden">
+        <div class="field-group">
+          <label for="signup-name">Full Name</label>
+          <input type="text" id="signup-name" placeholder="Jane Doe" required />
+        </div>
+        <div class="field-group">
+          <label for="signup-email">Email</label>
+          <input type="email" id="signup-email" placeholder="you@example.com" required />
+        </div>
+        <div class="field-group">
+          <label for="signup-password">Password</label>
+          <input type="password" id="signup-password" placeholder="Min. 8 characters" required />
+        </div>
+        <p id="signup-error" class="form-error hidden"></p>
+        <button type="submit" class="btn btn-primary btn-full">Create Account</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- ── APP SCREEN ──────────────────────────────────────────── -->
+  <div id="app-screen" class="screen hidden">
+
+    <!-- Navbar -->
+    <nav class="navbar">
+      <div class="nav-brand">
+        <span class="logo-icon">💰</span>
+        <span>FinanceTracker</span>
+      </div>
+      <div class="nav-right">
+        <span id="nav-username" class="nav-user"></span>
+        <button id="logout-btn" class="btn btn-ghost">Log Out</button>
+      </div>
+    </nav>
+
+    <main class="app-layout">
+
+      <!-- ── DASHBOARD ──────────────────────────────────────── -->
+      <section class="dashboard">
+        <h2 class="section-title">Overview <span id="current-month" class="month-label"></span></h2>
+
+        <div class="summary-cards">
+          <div class="card card-income">
+            <p class="card-label">Income</p>
+            <p class="card-amount" id="total-income">$0.00</p>
+          </div>
+          <div class="card card-expense">
+            <p class="card-label">Expenses</p>
+            <p class="card-amount" id="total-expenses">$0.00</p>
+          </div>
+          <div class="card card-balance">
+            <p class="card-label">Balance</p>
+            <p class="card-amount" id="net-balance">$0.00</p>
+          </div>
+        </div>
+
+        <!-- ── BUDGET ──────────────────────────────────────────── -->
+        <div class="budget-card">
+          <div class="budget-header">
+            <p class="card-label">Monthly Budget</p>
+            <button id="edit-budget-btn" class="btn btn-ghost btn-sm">Set Budget</button>
+          </div>
+
+          <!-- Inline set/update form -->
+          <form id="budget-form" class="budget-form hidden">
+            <input type="number" id="budget-amount" placeholder="e.g. 2000" min="1" step="0.01" required />
+            <button type="submit" class="btn btn-primary btn-sm">Save</button>
+            <button type="button" id="cancel-budget-btn" class="btn btn-ghost btn-sm">Cancel</button>
+          </form>
+
+          <!-- Progress display -->
+          <div id="budget-display" class="hidden">
+            <div class="budget-bar-wrap">
+              <div class="budget-bar-track">
+                <div class="budget-bar-fill" id="budget-bar-fill"></div>
+              </div>
+              <span class="budget-pct" id="budget-pct">0%</span>
+            </div>
+            <div class="budget-meta">
+              <span id="budget-spent-label">$0.00 spent</span>
+              <span id="budget-limit-label">Limit: $0.00</span>
+            </div>
+            <p class="budget-status" id="budget-status"></p>
+          </div>
+
+          <p id="budget-empty" class="budget-empty">No budget set for this month.</p>
+        </div>
+      </section>
+
+      <!-- ── TRANSACTION FORM ────────────────────────────────── -->
+      <section class="form-section">
+        <h2 class="section-title">Add Transaction</h2>
+
+        <form id="transaction-form" class="transaction-form">
+          <!-- Type toggle -->
+          <div class="type-toggle">
+            <label class="toggle-option">
+              <input type="radio" name="type" value="expense" checked />
+              <span>Expense</span>
+            </label>
+            <label class="toggle-option">
+              <input type="radio" name="type" value="income" />
+              <span>Income</span>
+            </label>
+          </div>
+
+          <div class="form-grid">
+            <div class="field-group">
+              <label for="tx-description">Description</label>
+              <input type="text" id="tx-description" placeholder="e.g. Grocery run" required />
+            </div>
+            <div class="field-group">
+              <label for="tx-amount">Amount ($)</label>
+              <input type="number" id="tx-amount" placeholder="0.00" min="0.01" step="0.01" required />
+            </div>
+            <div class="field-group">
+              <label for="tx-category">Category</label>
+              <select id="tx-category">
+                <option value="">-- Select --</option>
+              </select>
+            </div>
+            <div class="field-group">
+              <label for="tx-date">Date</label>
+              <input type="date" id="tx-date" required />
+            </div>
+          </div>
+
+          <p id="tx-error" class="form-error hidden"></p>
+          <button type="submit" class="btn btn-primary">Add Transaction</button>
+        </form>
+      </section>
+
+      <!-- ── TRANSACTION LIST ────────────────────────────────── -->
+      <section class="list-section">
+        <div class="list-header">
+          <h2 class="section-title">Transactions</h2>
+          <div class="list-filters">
+            <select id="filter-category">
+              <option value="">All Categories</option>
+            </select>
+            <select id="filter-type">
+              <option value="">All Types</option>
+              <option value="income">Income</option>
+              <option value="expense">Expense</option>
+            </select>
+          </div>
+        </div>
+
+        <div id="transaction-list" class="transaction-list">
+          <p class="empty-state">No transactions yet. Add one above!</p>
+        </div>
+      </section>
+
+    </main>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="supabase.js"></script>
+  <script src="script.js"></script>
+</body>
+</html>
