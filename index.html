@@ -123,6 +123,22 @@
 
           <p id="budget-empty" class="budget-empty">No budget set for this month.</p>
         </div>
+
+        <!-- ── AI INSIGHTS ──────────────────────────────────── -->
+        <div class="insights-card">
+          <div class="insights-header">
+            <div>
+              <p class="card-label">AI Spending Insights</p>
+              <p class="insights-sub">Powered by Claude · This month's transactions</p>
+            </div>
+            <button id="analyze-btn" class="btn btn-primary btn-sm">Analyze</button>
+          </div>
+          <p id="insights-empty" class="insights-empty">Click Analyze to get personalized insights for this month.</p>
+          <div id="insights-output" class="insights-output hidden">
+            <p id="insights-text" class="insights-text"></p>
+          </div>
+          <p id="insights-error" class="form-error hidden"></p>
+        </div>
       </section>
 
       <!-- ── TRANSACTION FORM ────────────────────────────────── -->
@@ -148,8 +164,22 @@
               <input type="text" id="tx-description" placeholder="e.g. Grocery run" required />
             </div>
             <div class="field-group">
-              <label for="tx-amount">Amount ($)</label>
-              <input type="number" id="tx-amount" placeholder="0.00" min="0.01" step="0.01" required />
+              <label for="tx-amount">Amount</label>
+              <div class="amount-row">
+                <input type="number" id="tx-amount" placeholder="0.00" min="0.01" step="0.01" required />
+                <select id="tx-currency" title="Currency">
+                  <option value="USD">USD</option>
+                  <option value="EUR">EUR</option>
+                  <option value="GBP">GBP</option>
+                  <option value="CAD">CAD</option>
+                  <option value="AUD">AUD</option>
+                  <option value="JPY">JPY</option>
+                  <option value="MXN">MXN</option>
+                  <option value="CNY">CNY</option>
+                  <option value="INR">INR</option>
+                </select>
+              </div>
+              <p id="tx-converted" class="converted-note hidden"></p>
             </div>
             <div class="field-group">
               <label for="tx-category">Category</label>

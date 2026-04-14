@@ -100,6 +100,7 @@ function onLogin(user) {
 let transactions  = [];
 let currentUser   = null;
 let currentBudget = null; // { id, limit_amount } for the current month
+let exchangeRates = {};   // { EUR: 0.92, GBP: 0.79, ... } — rates from USD
 
 const defaultCategories = [
   { id: 'c1', name: 'Housing',       type: 'expense' },
@@ -116,7 +117,8 @@ async function initApp() {
   setMonthLabel();
   populateCategoryDropdowns();
   setDefaultDate();
-  await Promise.all([loadTransactions(), loadBudget()]);
+  await Promise.all([loadTransactions(), loadBudget(), loadExchangeRates()]);
+  initCurrencySelector();
 }
 
 // ── DATE HELPERS ───────────────────────────────────────────────
@@ -162,6 +164,179 @@ async function loadTransactions() {
   transactions = data;
   renderTransactions();
   updateDashboard();
+}
+
+// ── EXCHANGE RATES (Frankfurter API + localStorage cache) ───────
+const RATES_CACHE_KEY = 'fx_rates_cache';
+const RATES_TTL_MS    = 60 * 60 * 1000; // 1 hour
+
+async function loadExchangeRates() {
+  // Check cache first
+  try {
+    const cached = JSON.parse(localStorage.getItem(RATES_CACHE_KEY) || 'null');
+    if (cached && Date.now() - cached.timestamp < RATES_TTL_MS) {
+      exchangeRates = cached.rates;
+      return;
+    }
+  } catch {}
+
+  // Fetch from Frankfurter (free, no API key)
+  try {
+    const res  = await fetch('https://api.frankfurter.app/latest?from=USD&to=EUR,GBP,CAD,AUD,JPY,MXN,CNY,INR');
+    const data = await res.json();
+    exchangeRates = data.rates; // e.g. { EUR: 0.92, GBP: 0.79, ... }
+    localStorage.setItem(RATES_CACHE_KEY, JSON.stringify({ rates: exchangeRates, timestamp: Date.now() }));
+  } catch {
+    console.warn('Could not load exchange rates — defaulting to USD only.');
+  }
+}
+
+// Convert amount in `currency` to USD
+function toUSD(amount, currency) {
+  if (currency === 'USD' || !exchangeRates[currency]) return amount;
+  return amount / exchangeRates[currency];
+}
+
+// Currency selector — show live conversion note as user types
+function initCurrencySelector() {
+  const amountInput  = $('tx-amount');
+  const currencySelect = $('tx-currency');
+  const convertedNote = $('tx-converted');
+
+  function updateConvertedNote() {
+    const currency = currencySelect.value;
+    const amount   = parseFloat(amountInput.value);
+    if (currency === 'USD' || !amount || !exchangeRates[currency]) {
+      convertedNote.classList.add('hidden');
+      return;
+    }
+    const usd = toUSD(amount, currency);
+    convertedNote.textContent = `≈ $${usd.toFixed(2)} USD`;
+    convertedNote.classList.remove('hidden');
+  }
+
+  amountInput.addEventListener('input', updateConvertedNote);
+  currencySelect.addEventListener('change', updateConvertedNote);
+}
+
+// ── AI INSIGHTS (Claude via streaming SSE) ──────────────────────
+const INSIGHTS_CACHE_KEY = 'insights_cache';
+
+$('analyze-btn').addEventListener('click', analyzeSpending);
+
+async function analyzeSpending() {
+  const btn    = $('analyze-btn');
+  const output = $('insights-output');
+  const text   = $('insights-text');
+  const empty  = $('insights-empty');
+  const error  = $('insights-error');
+
+  // Get this month's transactions
+  const now   = new Date();
+  const month = now.getMonth();
+  const year  = now.getFullYear();
+
+  const monthly = transactions.filter(tx => {
+    const d = new Date(tx.date);
+    return d.getMonth() === month && d.getFullYear() === year;
+  });
+
+  if (monthly.length === 0) {
+    error.textContent = 'No transactions this month to analyze yet.';
+    error.classList.remove('hidden');
+    empty.classList.add('hidden');
+    return;
+  }
+
+  // Check cache — keyed by a simple fingerprint (count + total amount)
+  const totalAmt     = monthly.reduce((s, t) => s + Number(t.amount), 0);
+  const fingerprint  = `${monthly.length}-${totalAmt.toFixed(2)}-${currentBudget?.limit_amount ?? 0}`;
+  try {
+    const cached = JSON.parse(localStorage.getItem(INSIGHTS_CACHE_KEY) || 'null');
+    if (cached && cached.fingerprint === fingerprint) {
+      showInsightsResult(cached.text);
+      return;
+    }
+  } catch {}
+
+  // Enrich transactions with category names for the prompt
+  const enriched = monthly.map(tx => ({
+    ...tx,
+    category_name: getCategoryName(tx.category_id),
+  }));
+
+  // UI: loading state
+  btn.disabled     = true;
+  btn.textContent  = 'Analyzing…';
+  error.classList.add('hidden');
+  empty.classList.add('hidden');
+  output.classList.remove('hidden');
+  text.textContent = '';
+  text.classList.add('streaming');
+
+  try {
+    const res = await fetch('/api/insights', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ transactions: enriched, budget: currentBudget }),
+    });
+
+    if (!res.ok) {
+      throw new Error(`Server error ${res.status}`);
+    }
+
+    // Read the SSE stream from Anthropic passed through our edge function
+    const reader  = res.body.getReader();
+    const decoder = new TextDecoder();
+    let   fullText = '';
+    let   buffer   = '';
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+
+      buffer += decoder.decode(value, { stream: true });
+      const lines = buffer.split('\n');
+      buffer = lines.pop(); // keep incomplete last line in buffer
+
+      for (const line of lines) {
+        if (!line.startsWith('data: ')) continue;
+        const payload = line.slice(6).trim();
+        if (payload === '[DONE]') continue;
+        try {
+          const parsed = JSON.parse(payload);
+          if (parsed.type === 'content_block_delta' && parsed.delta?.type === 'text_delta') {
+            fullText       += parsed.delta.text;
+            text.textContent = fullText;
+          }
+        } catch {}
+      }
+    }
+
+    text.classList.remove('streaming');
+
+    // Cache the result
+    localStorage.setItem(INSIGHTS_CACHE_KEY, JSON.stringify({ fingerprint, text: fullText }));
+
+  } catch (err) {
+    text.classList.remove('streaming');
+    output.classList.add('hidden');
+    empty.classList.add('hidden');
+    error.textContent = 'Could not fetch insights. Check that ANTHROPIC_API_KEY is set in Vercel.';
+    error.classList.remove('hidden');
+    console.error('Insights error:', err);
+  } finally {
+    btn.disabled    = false;
+    btn.textContent = 'Analyze';
+  }
+}
+
+function showInsightsResult(content) {
+  $('insights-empty').classList.add('hidden');
+  $('insights-error').classList.add('hidden');
+  $('insights-output').classList.remove('hidden');
+  $('insights-text').textContent = content;
+  $('insights-text').classList.remove('streaming');
 }
 
 // ── BUDGET ─────────────────────────────────────────────────────
@@ -284,14 +459,18 @@ $('transaction-form').addEventListener('submit', async e => {
 
   const type        = document.querySelector('input[name="type"]:checked').value;
   const description = $('tx-description').value.trim();
-  const amount      = parseFloat($('tx-amount').value);
+  const rawAmount   = parseFloat($('tx-amount').value);
+  const currency    = $('tx-currency').value;
   const category_id = $('tx-category').value || null;
   const date        = $('tx-date').value;
 
-  if (!description || !amount || !date) {
+  if (!description || !rawAmount || !date) {
     showError('tx-error', 'Please fill in all required fields.');
     return;
   }
+
+  // Convert to USD before storing
+  const amount = parseFloat(toUSD(rawAmount, currency).toFixed(2));
 
   const { data, error } = await db
     .from('transactions')
@@ -309,6 +488,8 @@ $('transaction-form').addEventListener('submit', async e => {
   updateDashboard();
   renderBudget();
   $('transaction-form').reset();
+  $('tx-currency').value = 'USD';
+  $('tx-converted').classList.add('hidden');
   setDefaultDate();
 });
 

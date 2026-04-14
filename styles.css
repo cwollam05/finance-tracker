@@ -322,6 +322,92 @@ body {
   color: var(--muted);
 }
 
+/* ── CURRENCY AMOUNT ROW ───────────────────────────────────────── */
+.amount-row {
+  display: flex;
+  gap: .4rem;
+}
+
+.amount-row input {
+  flex: 1;
+  min-width: 0;
+}
+
+.amount-row select {
+  width: 5rem;
+  padding: .6rem .4rem;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  color: var(--text);
+  font-size: .85rem;
+  outline: none;
+  cursor: pointer;
+  transition: border-color .2s;
+}
+.amount-row select:focus { border-color: var(--blue); }
+
+.converted-note {
+  font-size: .75rem;
+  color: var(--muted);
+  margin-top: .25rem;
+}
+
+/* ── AI INSIGHTS CARD ──────────────────────────────────────────── */
+.insights-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 1.25rem 1rem;
+  margin-top: 1rem;
+}
+
+.insights-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: .75rem;
+}
+
+.insights-sub {
+  font-size: .72rem;
+  color: var(--muted);
+  margin-top: .15rem;
+}
+
+.insights-empty {
+  font-size: .85rem;
+  color: var(--muted);
+}
+
+.insights-output {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 1rem;
+}
+
+.insights-text {
+  font-size: .88rem;
+  line-height: 1.75;
+  color: var(--text);
+  white-space: pre-wrap;
+}
+
+/* Blinking cursor while streaming */
+.insights-text.streaming::after {
+  content: '▍';
+  display: inline-block;
+  animation: blink .7s step-end infinite;
+  color: var(--blue);
+  margin-left: 1px;
+}
+
+@keyframes blink {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0; }
+}
+
 /* ── TRANSACTION FORM ──────────────────────────────────────────── */
 .form-section {
   background: var(--surface);
@@ -517,4 +603,10 @@ body {
 
   /* Auth card */
   .auth-card     { padding: 1.5rem 1rem; }
+
+  /* Insights card */
+  .insights-card { padding: .75rem .75rem; margin-top: .5rem; }
+
+  /* Currency select */
+  .amount-row select { width: 4.5rem; font-size: .78rem; }
 }
