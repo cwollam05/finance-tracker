@@ -15,6 +15,13 @@ export default async function handler(req) {
     return new Response('Method not allowed', { status: 405 });
   }
 
+  if (!process.env.ANTHROPIC_API_KEY) {
+    return new Response(JSON.stringify({ error: 'ANTHROPIC_API_KEY is not set in Vercel environment variables.' }), {
+      status: 500,
+      headers: { 'Content-Type': 'application/json' },
+    });
+  }
+
   const { transactions, budget } = await req.json();
 
   const now   = new Date();

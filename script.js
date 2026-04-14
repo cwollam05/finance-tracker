@@ -282,7 +282,8 @@ async function analyzeSpending() {
     });
 
     if (!res.ok) {
-      throw new Error(`Server error ${res.status}`);
+      const body = await res.json().catch(() => ({}));
+      throw new Error(body.error || `Server error ${res.status}`);
     }
 
     // Read the SSE stream from Anthropic passed through our edge function
@@ -322,7 +323,7 @@ async function analyzeSpending() {
     text.classList.remove('streaming');
     output.classList.add('hidden');
     empty.classList.add('hidden');
-    error.textContent = 'Could not fetch insights. Check that ANTHROPIC_API_KEY is set in Vercel.';
+    error.textContent = `Insights error: ${err.message}`;
     error.classList.remove('hidden');
     console.error('Insights error:', err);
   } finally {
