@@ -1,7 +1,1 @@
-{
-  "functions": {
-    "api/insights.js": {
-      "runtime": "edge"
-    }
-  }
-}
+{}
